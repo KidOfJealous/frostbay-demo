@@ -6787,7 +6787,7 @@ canvas.addEventListener('pointermove', (e) => {
       plunger.tx = x; plunger.tz = z;
     }
   } else if (interaction.kind === 'block') {
-    block.targetTiltX = clamp(interaction.startTiltX - dy * 0.0038, -0.16, 0.16);
+    block.targetTiltX = clamp(interaction.startTiltX + dy * 0.0038, -0.16, 0.16);
     block.targetTiltZ = clamp(interaction.startTiltZ + dx * 0.0038, -0.16, 0.16);
     block.targetOffX = clamp(interaction.startOffX + dx * 0.0013, -0.3, 0.3);
     block.targetOffZ = clamp(interaction.startOffZ + dy * 0.0009, -0.24, 0.24);
