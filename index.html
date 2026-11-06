@@ -2186,7 +2186,7 @@ function buildIglooSnowMesh() {
       const e0 = el0 + gapEl, e1 = el1 - gapEl;
       const midAz = (az0 + az1) / 2;
       // entrance cut-out through the front of the two lowest rows
-      if (el0 < 0.55 && Math.abs(Math.atan2(Math.sin(midAz - IGLOO.yaw), Math.cos(midAz - IGLOO.yaw))) < 0.38) {
+      if (el0 < 0.55 && Math.abs(Math.atan2(Math.sin(midAz), Math.cos(midAz))) < 0.38) {
         continue;
       }
       const rr = R + 0.003 * Math.sin(k * 4.7 + ri * 2.1);
@@ -2196,53 +2196,49 @@ function buildIglooSnowMesh() {
   // snow floor / platform
   addCylinder(mb, [IGLOO.x, IGLOO.y - 0.07, IGLOO.z], [IGLOO.x, IGLOO.y + 0.005, IGLOO.z], 0.96, 0.93, C.snow2, { seg: 36 });
   addUpFacingDisc(mb, IGLOO.x, IGLOO.y + 0.007, IGLOO.z, 0.93, 0.85, C.snow, { seg: 36, topColor: C.snow });
-  // entrance tunnel side blocks
+  // entrance tunnel: build in the igloo's door frame so it follows the dome yaw
   const front = iglooWorld(0, 0, R * 0.92);
   const yaw = IGLOO.yaw;
   const dir = [Math.sin(yaw), 0, Math.cos(yaw)];
   const side = [Math.cos(yaw), 0, -Math.sin(yaw)];
-  const t = 0.28;
-  const tz0 = front[2] - dir[2] * 0.06, tz1 = front[2] + dir[2] * 0.5;
-  const tx = front[0];
+  const up = [0, 1, 0];
+  const d0 = -0.06, d1 = 0.5, dMid = (d0 + d1) * 0.5;
   for (const sgn of [-1, 1]) {
-    const bx = tx + side[0] * sgn * 0.34;
-    const bz = (tz0 + tz1) / 2 + side[2] * sgn * 0.34;
-    addBox(mb, bx, IGLOO.y + 0.15, bz, 0.14, 0.32, 0.55, C.snow2, { sides: C.snowBlue, top: C.snow });
+    const cx = front[0] + dir[0] * dMid + side[0] * sgn * 0.34;
+    const cz = front[2] + dir[2] * dMid + side[2] * sgn * 0.34;
+    addOrientedBox(mb, [cx, IGLOO.y + 0.15, cz], side, up, dir, 0.14, 0.32, 0.55, C.snow2, { sides: C.snowBlue, top: C.snow });
   }
-  // arch voussoir blocks
+  // arch voussoir blocks, also in the door frame
   const arcSegs = 5;
   const arcY = IGLOO.y + 0.3;
   const innerR = 0.255, outerR = 0.385;
   const a0 = 0.05, a1 = Math.PI - 0.05;
+  const archAt = (a, r, depth) => [
+    front[0] + dir[0] * depth + side[0] * Math.cos(a) * r,
+    arcY + Math.sin(a) * r,
+    front[2] + dir[2] * depth + side[2] * Math.cos(a) * r,
+  ];
   for (let s = 0; s < arcSegs; s++) {
     const aa = lerp(a0, a1, s / arcSegs) + 0.012;
     const bb = lerp(a0, a1, (s + 1) / arcSegs) - 0.012;
-    const corners = [];
-    for (const r of [innerR, outerR]) {
-      for (const zz of [tz0, tz1]) {
-        for (const a of [aa, bb]) {
-          corners.push([front[0] + Math.cos(a) * r, arcY + Math.sin(a) * r, zz]);
-        }
-      }
-    }
     const c = mixColor(C.snow, C.snowBlue, 0.05 + 0.04 * s);
-    // outer arch curve
-    const o0 = [front[0] + Math.cos(aa) * outerR, arcY + Math.sin(aa) * outerR, tz0];
-    const o1 = [front[0] + Math.cos(bb) * outerR, arcY + Math.sin(bb) * outerR, tz0];
-    const o2 = [front[0] + Math.cos(bb) * outerR, arcY + Math.sin(bb) * outerR, tz1];
-    const o3 = [front[0] + Math.cos(aa) * outerR, arcY + Math.sin(aa) * outerR, tz1];
-    const i0 = [front[0] + Math.cos(aa) * innerR, arcY + Math.sin(aa) * innerR, tz0];
-    const i1 = [front[0] + Math.cos(bb) * innerR, arcY + Math.sin(bb) * innerR, tz0];
-    const i2 = [front[0] + Math.cos(bb) * innerR, arcY + Math.sin(bb) * innerR, tz1];
-    const i3 = [front[0] + Math.cos(aa) * innerR, arcY + Math.sin(aa) * innerR, tz1];
+    const o0 = archAt(aa, outerR, d0);
+    const o1 = archAt(bb, outerR, d0);
+    const o2 = archAt(bb, outerR, d1);
+    const o3 = archAt(aa, outerR, d1);
+    const i0 = archAt(aa, innerR, d0);
+    const i1 = archAt(bb, innerR, d0);
+    const i2 = archAt(bb, innerR, d1);
+    const i3 = archAt(aa, innerR, d1);
     mb.quad(o0, o1, o2, o3, c);
     mb.quad(i1, i0, i3, i2, scaleColor(c, 0.8));
     mb.quad(o0, o3, i3, i0, c);
     mb.quad(o1, i1, i2, o2, c);
     mb.quad(o3, o2, i2, i3, C.snow2);
+    mb.quad(o1, o0, i0, i1, scaleColor(c, 0.72));
   }
   // snow rim around window opening + cross bar
-  const wAz = 0.56, wEl = 0.55;
+  const wAz = 0.9, wEl = 0.55;
   const wPos = iglooWorld(wAz, wEl, R + 0.008);
   const wn = normalize3([wPos[0] - IGLOO.x, wPos[1] - IGLOO.y, wPos[2] - IGLOO.z]);
   const wu = normalize3(cross3([0, 1, 0], wn));
@@ -2264,7 +2260,7 @@ function buildIglooSnowMesh() {
 
 function buildIglooEmissiveMeshes() {
   const mbWin = new MeshBuilder();
-  const wAz = 0.56, wEl = 0.55;
+  const wAz = 0.9, wEl = 0.55;
   const wPos = iglooWorld(wAz, wEl, IGLOO.r + 0.016);
   const wn = normalize3([wPos[0] - IGLOO.x, wPos[1] - IGLOO.y, wPos[2] - IGLOO.z]);
   const wu = normalize3(cross3([0, 1, 0], wn));
