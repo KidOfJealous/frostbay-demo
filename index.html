@@ -5226,15 +5226,26 @@ fn vs_main(in: VSIn, @builtin(instance_index) ii: u32) -> VSOut {
     p.y += sin(p.x * 8.0 - t * 6.8 + p.y * 4.0) * 0.052 * d * d * wind;
     p.z += sin(p.x * 6.5 - t * 5.6 + 0.8) * 0.095 * d * wind + sin(p.y * 9.0 + t * 4.3) * 0.012 * d;
   }
+  var jellyFollow = 0.0;
   if (flags == 8) {
+    // local pull at the jelly edge
     let dxz = p.xz - vec2f(G.jelly.x, G.jelly.y);
     let fall = exp(-dot(dxz, dxz) / max(0.02, G.jelly2.x * G.jelly2.x));
     p.x += G.jelly.z * fall;
     p.z += G.jelly.w * fall;
     p.y += fall * length(G.jelly.zw) * 0.58;
+    // the jelly surface follows the glass sea; the bottom stays planted
+    jellyFollow = smoothstep(0.0, 1.0, clamp((p.y + 2.36) / 0.98, 0.0, 1.0));
   }
-  let world = o.model * vec4f(p, 1.0);
+  var world4 = o.model * vec4f(p, 1.0);
   var N = normalize((o.model * vec4f(in.nrm, 0.0)).xyz);
+  if (flags == 8 && jellyFollow > 0.0) {
+    let followed = G.blockMat * vec4f(p, 1.0);
+    let followedN = normalize((G.blockMat * vec4f(in.nrm, 0.0)).xyz);
+    world4 = mix(world4, followed, jellyFollow);
+    N = normalize(mix(N, followedN, jellyFollow));
+  }
+  let world = world4;
   var out: VSOut;
   out.clip = G.viewProj * world;
   out.world = world.xyz;
@@ -6921,6 +6932,7 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
 
 
 
