@@ -6736,6 +6736,23 @@ canvas.addEventListener('pointerdown', (e) => {
     interaction.startTiltZ = block.targetTiltZ;
     interaction.startOffX = block.targetOffX;
     interaction.startOffZ = block.targetOffZ;
+    let blockAxis = 2, blockSign = 1;
+    if (hit.wall) {
+      blockAxis = hit.wall.axis;
+      blockSign = hit.wall.sign;
+    } else if (hit.local) {
+      // Grabbing the sea close to the rim: use the nearest wall.
+      const candidates = [
+        { axis: 0, sign: -1, d: Math.abs(hit.local[0] - SEA.x0) },
+        { axis: 0, sign: 1, d: Math.abs(hit.local[0] - SEA.x1) },
+        { axis: 2, sign: -1, d: Math.abs(hit.local[2] - SEA.z0) },
+        { axis: 2, sign: 1, d: Math.abs(hit.local[2] - SEA.z1) },
+      ].sort((a, b) => a.d - b.d);
+      blockAxis = candidates[0].axis;
+      blockSign = candidates[0].sign;
+    }
+    interaction.blockAxis = blockAxis;
+    interaction.blockSign = blockSign;
     interaction.startJellyTX = jelly.tx;
     interaction.startJellyTZ = jelly.tz;
     let anchor = hit.local;
@@ -6799,8 +6816,17 @@ canvas.addEventListener('pointermove', (e) => {
       plunger.tx = x; plunger.tz = z;
     }
   } else if (interaction.kind === 'block') {
-    block.targetTiltX = clamp(interaction.startTiltX + dy * 0.0038, -0.16, 0.16);
-    block.targetTiltZ = clamp(interaction.startTiltZ + dx * 0.0038, -0.16, 0.16);
+    // Press the face you grabbed, not a fixed world face.
+    let nextTiltX = interaction.startTiltX;
+    let nextTiltZ = interaction.startTiltZ;
+    if (interaction.blockAxis === 2) {
+      nextTiltX += interaction.blockSign * dy * 0.0038;
+    } else {
+      nextTiltZ -= interaction.blockSign * dy * 0.0038;
+    }
+    nextTiltZ += dx * 0.0038;
+    block.targetTiltX = clamp(nextTiltX, -0.16, 0.16);
+    block.targetTiltZ = clamp(nextTiltZ, -0.16, 0.16);
     block.targetOffX = clamp(interaction.startOffX + dx * 0.0013, -0.3, 0.3);
     block.targetOffZ = clamp(interaction.startOffZ + dy * 0.0009, -0.24, 0.24);
     jelly.tx = clamp(dx * 0.0017, -0.28, 0.28);
@@ -6944,6 +6970,7 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
 
 
 
