@@ -1065,7 +1065,7 @@ body[data-mode="aurora"] .btn.primary {
       <dl class="ro"><dt>Whale</dt><dd id="roWhale">patrolling</dd></dl>
       <dl class="ro"><dt>Swell</dt><dd id="roSwell">calm · 0.00 m</dd></dl>
     </section>
-    <div class="panel-hints">Sea: press + drag · glass: drag a side · jelly: pull an edge · kayak: drag · whale: double-tap</div>
+    <div class="panel-hints">Sea: press + drag · glass: drag a side · jelly or space: orbit · kayak: drag · whale: double-tap</div>
   </aside>
 
   <div class="readouts" aria-hidden="true">
@@ -1075,7 +1075,7 @@ body[data-mode="aurora"] .btn.primary {
     <dl class="ro"><dt>Swell</dt><dd id="roSwell2">calm · 0.00 m</dd></dl>
   </div>
 
-  <div class="hints"><b>Press</b> the sea · <b>drag</b> a glass side · <b>pull</b> the jelly · <b>drag</b> the kayak · <b>double-click</b> for the whale</div>
+  <div class="hints"><b>Press</b> the sea · <b>drag</b> a glass side · <b>drag</b> jelly or space to orbit · <b>drag</b> the kayak · <b>double-click</b> for the whale</div>
   <button type="button" class="panel-toggle" id="panelToggle" aria-expanded="false" aria-controls="panel">Controls</button>
 </div>
 
@@ -6715,6 +6715,13 @@ canvas.addEventListener('pointerdown', (e) => {
     canvas.style.cursor = 'crosshair';
   } else if (hit.kind === 'block' || hit.kind === 'jelly') {
     const isJelly = hit.kind === 'jelly';
+    // Grabbing the jelly base orbits the view like empty space.
+    // Hold Option/Alt when grabbing the jelly if you want to pull its edge.
+    if (isJelly && !e.altKey) {
+      beginOrbit(e.pointerId, e.clientX, e.clientY);
+      e.preventDefault();
+      return;
+    }
     interaction.kind = isJelly ? 'jelly' : 'block';
     interaction.pointerId = e.pointerId;
     interaction.startX = interaction.lastX = e.clientX;
@@ -6932,6 +6939,7 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
 
 
 
