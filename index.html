@@ -6805,8 +6805,13 @@ canvas.addEventListener('pointermove', (e) => {
       interaction.orbitYaw = camera.targetYaw;
       interaction.orbitPitch = camera.targetPitch;
     }
-    camera.targetYaw = interaction.orbitYaw - (e.clientX - interaction.px) * 0.005;
-    camera.targetPitch = clamp(interaction.orbitPitch + (e.clientY - interaction.py) * 0.004, 0.045, 1.28);
+    let odx = e.clientX - interaction.px;
+    let ody = e.clientY - interaction.py;
+    const oax = Math.abs(odx), oay = Math.abs(ody);
+    if (oax > oay * 1.2) ody = 0;
+    else if (oay > oax * 1.2) odx = 0;
+    camera.targetYaw = interaction.orbitYaw - odx * 0.005;
+    camera.targetPitch = clamp(interaction.orbitPitch + ody * 0.004, 0.045, 1.28);
   } else if (interaction.kind === 'water') {
     const ray = localRay(screenToRay(e.clientX, e.clientY));
     const h = rayPlane(ray, state.tide);
@@ -6816,21 +6821,26 @@ canvas.addEventListener('pointermove', (e) => {
       plunger.tx = x; plunger.tz = z;
     }
   } else if (interaction.kind === 'block') {
+    // Dominant-axis gesture: a sideways swipe must not become a press.
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    let sx = dx, sy = dy;
+    if (adx > ady * 1.2) sy = 0;
+    else if (ady > adx * 1.2) sx = 0;
     // Press the face you grabbed, not a fixed world face.
     let nextTiltX = interaction.startTiltX;
     let nextTiltZ = interaction.startTiltZ;
     if (interaction.blockAxis === 2) {
-      nextTiltX += interaction.blockSign * dy * 0.0038;
+      nextTiltX += interaction.blockSign * sy * 0.0038;
     } else {
-      nextTiltZ -= interaction.blockSign * dy * 0.0038;
+      nextTiltZ -= interaction.blockSign * sy * 0.0038;
     }
-    nextTiltZ += dx * 0.0038;
+    nextTiltZ += sx * 0.0038;
     block.targetTiltX = clamp(nextTiltX, -0.16, 0.16);
     block.targetTiltZ = clamp(nextTiltZ, -0.16, 0.16);
-    block.targetOffX = clamp(interaction.startOffX + dx * 0.0013, -0.3, 0.3);
-    block.targetOffZ = clamp(interaction.startOffZ + dy * 0.0009, -0.24, 0.24);
-    jelly.tx = clamp(dx * 0.0017, -0.28, 0.28);
-    jelly.tz = clamp(dy * 0.0017, -0.28, 0.28);
+    block.targetOffX = clamp(interaction.startOffX + sx * 0.0013, -0.3, 0.3);
+    block.targetOffZ = clamp(interaction.startOffZ + sy * 0.0009, -0.24, 0.24);
+    jelly.tx = clamp(sx * 0.0017, -0.28, 0.28);
+    jelly.tz = clamp(sy * 0.0017, -0.28, 0.28);
   } else if (interaction.kind === 'jelly') {
     jelly.tx = clamp(interaction.startJellyTX + dx * 0.0048, -0.46, 0.46);
     jelly.tz = clamp(interaction.startJellyTZ + dy * 0.0048, -0.46, 0.46);
@@ -6970,6 +6980,7 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
 
 
 
