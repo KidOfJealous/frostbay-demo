@@ -6616,6 +6616,11 @@ function beginOrbit(pointerId, x, y) {
   interaction.pointerId = pointerId;
   interaction.startX = interaction.lastX = x;
   interaction.startY = interaction.lastY = y;
+  // Always start a new orbit from the current view, not from a stale gesture.
+  interaction.px = x;
+  interaction.py = y;
+  interaction.orbitYaw = camera.targetYaw;
+  interaction.orbitPitch = camera.targetPitch;
   interaction.moved = false;
   canvas.style.cursor = 'grabbing';
 }
@@ -6939,6 +6944,7 @@ async function initWebGPU() {
 }
 
 initWebGPU();
+
 
 
 
